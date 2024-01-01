@@ -251,6 +251,16 @@ local function getUserAvatar(userId)
     }
 end
 
+local function getUserBio(userId)
+    local userData = getUserData(userId)
+    return userData.bio
+end
+
+local function getUserStatus(userId)
+    local userData = getUserData(userId)
+    return userData.status
+end
+
 AddEventHandler('onResourceStart', function(rName)
     if rName and rName ~= GetCurrentResourceName() then return end
     if DiscordAPI.ValidToken == nil then
@@ -266,7 +276,9 @@ local exportFunctions = {
     checkUserHasRole = checkUserHasRole,
     getUserRoles = getUserRoles,
     getUserAvatar = getUserAvatar,
-    getUserData = getUserData
+    getUserData = getUserData,
+    getUserStatus = getUserStatus,
+    getUserBio = getUserBio
 }
 
 for exportName, exportFunction in pairs(exportFunctions) do
