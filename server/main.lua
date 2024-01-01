@@ -11,8 +11,12 @@ function checkToken()
           }
           httpRequest(
              requestURL,
-             function(err, response, headers)
-
+             function(sCode, response, headers)
+                if (sCode and sCode == 200) then
+                  return true
+                else
+                  return false
+                end
              end,
              'GET',
              '',
