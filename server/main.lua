@@ -74,31 +74,36 @@ function checkToken()
    end
 end
 
-function giveRole(userId)
+function giveRole(userId, roleId)
     if (DiscordAPI and DiscordAPI.ValidToken) then
         if (DiscordAPI and DiscordAPI.URL) then
             if (Config and Config.GuildID ~= "") then
-                if (userId) then
-                    local requestURL = ("%s/guilds/%s/members/%s"):format(DiscordAPI.URL, Config.GuildID, userId)
-                    if (requestURL) then
-                        local requestHeaders = {
-                            ['Authorization'] = ("Bot "):format(Config.BotToken)
-                        }
+                if (userId and roleId) then
+                    local guildCheck = checkIsInGuild(userId)
+                    if (guildCheck) then
+                        local requestURL = ("%s/guilds/%s/members/%s/roles/%s"):format(DiscordAPI.URL, Config.GuildID, userId, roleId)
+                        if (requestURL) then
+                            local requestHeaders = {
+                                ['Authorization'] = ("Bot %s"):format(Config.BotToken)
+                            }
 
-                        if (requestHeaders and requestHeaders['Authorization']) then
-                            httpRequest(
-                                requestURL,
-                                function(sCode, response, headers)
-                                    if (sCode and sCode == 200) then
-                                        return true
-                                    else
-                                        return false
-                                    end
-                                end,
-                                'GET',
-                                '',
-                                requestHeaders
-                            )
+                            if (requestHeaders and requestHeaders['Authorization']) then
+                                httpRequest(
+                                    requestURL,
+                                    function(sCode, response, headers)
+                                        if (sCode and sCode == 204) then
+                                            return true
+                                        else
+                                            return false
+                                        end
+                                    end,
+                                    'PUT',
+                                    '',
+                                    requestHeaders
+                                )
+                            else
+                                return false
+                            end
                         else
                             return false
                         end
@@ -123,7 +128,101 @@ function giveRole(userId)
 end
 
 function removeRole(userId, roleId)
-    
+    if (DiscordAPI and DiscordAPI.ValidToken) then
+        if (DiscordAPI and DiscordAPI.URL) then
+            if (Config and Config.GuildID ~= "") then
+                if (userId and roleId) then
+                    local guildCheck = checkIsInGuild(userId)
+                    if (guildCheck) then
+                        local requestURL = ("%s/guilds/%s/members/%s/roles/%s"):format(DiscordAPI.URL, Config.GuildID, userId, roleId)
+                        if (requestURL) then
+                            local requestHeaders = {
+                                ['Authorization'] = ("Bot %s"):format(Config.BotToken)
+                            }
+
+                            if (requestHeaders and requestHeaders['Authorization']) then
+                                httpRequest(
+                                    requestURL,
+                                    function(sCode, response, headers)
+                                        if (sCode and sCode == 204) then
+                                            return true
+                                        else
+                                            return false
+                                        end
+                                    end,
+                                    'DELETE',
+                                    '',
+                                    requestHeaders
+                                )
+                            else
+                                return false
+                            end
+                        else
+                            return false
+                        end
+                    else
+                        return false
+                    end
+                else
+                    return false
+                end
+            else
+                return false
+            end
+        else
+            return false
+        end
+    else
+        if (not DiscordAPI.ValidToken) then
+            print("^0[^1ERROR^0] The specified Bot Token is not valid or isn't working")
+            return false
+        end
+    end
+end
+
+function checkIsInGuild(userId)
+    if (DiscordAPI and DiscordAPI.URL and DiscordAPI.ValidToken) then
+        if (Config and Config.GuildID) then
+            if (userId) then
+                local requestURL = ("%s/guilds/%s/members/%s"):format(DiscordAPI.URL, Config.GuildID, userId)
+                if (requestURL) then
+                    local requestHeaders = {
+                        ['Authorization'] = ("Bot %s"):format(Config.BotToken)
+                    }
+                    if (requestHeaders and requestHeaders['Authorization']) then
+                        httpRequest(
+                            requestURL,
+                            function(sCode, response, headers)
+                                if (sCode and sCode == 200) then
+                                    if (response) then
+                                        local responseData = json.decode(response)
+                                        if (responseData and responseData['id']) then
+                                            return true
+                                        else
+                                            return false
+                                        end
+                                    end
+                                end
+                            end,
+                            'GET',
+                            '',
+                            requestHeaders
+                        )
+                    else
+                        return false
+                    end
+                else
+                    return false
+                end
+            else
+                return false
+            end
+        else
+            return false
+        end
+    else
+        return false
+    end
 end
 
 AddEventHandler(
