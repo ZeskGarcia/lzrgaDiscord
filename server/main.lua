@@ -208,6 +208,36 @@ AddEventHandler('onResourceStart', function(rName)
     end
 end)
 
+local function getUserRoles(userId)
+    if not (DiscordAPI.ValidToken and Config.GuildID and userId) then
+        return {}
+    end
+
+    local requestURL = ("%s/guilds/%s/members/%s"):format(DiscordAPI.URL, Config.GuildID, userId)
+    local requestHeaders = {
+        ['Authorization'] = ("Bot %s"):format(Config.BotToken)
+    }
+
+    local userRoles = {}
+
+    sendHttpRequest(
+        requestURL,
+        function(sCode, response, headers)
+            if sCode == 200 then
+                local responseData = json.decode(response)
+                if responseData and responseData.roles then
+                    userRoles = responseData.roles
+                end
+            end
+        end,
+        'GET',
+        '',
+        requestHeaders
+    )
+
+    return userRoles
+end
+
 local exportFunctions = {
     checkIsInGuild = checkIsInGuild,
     removeRole = removeRole,
