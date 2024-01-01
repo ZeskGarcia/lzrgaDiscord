@@ -1,6 +1,8 @@
 game { 'gta5' }
 fx_version 'adamant'
 
+server_only 'yes'
+
 server_scripts {
   'server/config.lu*',
   'server/main.lu*'
