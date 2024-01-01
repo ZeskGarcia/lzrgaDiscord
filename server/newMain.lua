@@ -70,6 +70,18 @@ local function modifyUserRole(userId, roleId, method)
         return false
     end
 
+    local hasRole = checkUserHasRole(userId, roleId)
+    
+    if method == 'PUT' and not hasRole then
+        return addRole(userId, roleId)
+    elseif method == 'DELETE' and hasRole then
+        return removeRole(userId, roleId)
+    else
+        return true
+    end
+end
+
+local function addRole(userId, roleId)
     local requestURL = ("%s/guilds/%s/members/%s/roles/%s"):format(DiscordAPI.URL, Config.GuildID, userId, roleId)
     local requestHeaders = {
         ['Authorization'] = ("Bot %s"):format(Config.BotToken)
@@ -80,10 +92,66 @@ local function modifyUserRole(userId, roleId, method)
         function(sCode, response, headers)
             return sCode == 204
         end,
-        method,
+        'PUT',
         '',
         requestHeaders
     )
+end
+
+local function removeRole(userId, roleId)
+    local requestURL = ("%s/guilds/%s/members/%s/roles/%s"):format(DiscordAPI.URL, Config.GuildID, userId, roleId)
+    local requestHeaders = {
+        ['Authorization'] = ("Bot %s"):format(Config.BotToken)
+    }
+
+    sendHttpRequest(
+        requestURL,
+        function(sCode, response, headers)
+            return sCode == 204
+        end,
+        'DELETE',
+        '',
+        requestHeaders
+    )
+end
+
+local function checkUserHasRole(userId, roleId)
+    if not (DiscordAPI.ValidToken and Config.GuildID and userId and roleId) then
+        return false
+    end
+
+    local requestURL = ("%s/guilds/%s/members/%s"):format(DiscordAPI.URL, Config.GuildID, userId)
+    local requestHeaders = {
+        ['Authorization'] = ("Bot %s"):format(Config.BotToken)
+    }
+
+    local hasRole = false
+
+    sendHttpRequest(
+        requestURL,
+        function(sCode, response, headers)
+            if sCode == 200 then
+                local responseData = json.decode(response)
+                if responseData and responseData.roles then
+                    hasRole = hasRoleInRoles(roleId, responseData.roles)
+                end
+            end
+        end,
+        'GET',
+        '',
+        requestHeaders
+    )
+
+    return hasRole
+end
+
+local function hasRoleInRoles(roleId, roles)
+    for _, role in ipairs(roles) do
+        if role == roleId then
+            return true
+        end
+    end
+    return false
 end
 
 local function giveRole(userId, roleId)
@@ -118,6 +186,68 @@ local function checkIsInGuild(userId)
     )
 end
 
+local function getUserRoles(userId)
+    if not (DiscordAPI.ValidToken and Config.GuildID and userId) then
+        return {}
+    end
+
+    local requestURL = ("%s/guilds/%s/members/%s"):format(DiscordAPI.URL, Config.GuildID, userId)
+    local requestHeaders = {
+        ['Authorization'] = ("Bot %s"):format(Config.BotToken)
+    }
+
+    local userRoles = {}
+
+    sendHttpRequest(
+        requestURL,
+        function(sCode, response, headers)
+            if sCode == 200 then
+                local responseData = json.decode(response)
+                if responseData and responseData.roles then
+                    userRoles = responseData.roles
+                end
+            end
+        end,
+        'GET',
+        '',
+        requestHeaders
+    )
+
+    return userRoles
+end
+
+local function getUserData(userId)
+    if not (DiscordAPI.ValidToken and Config.GuildID and userId) then
+        return {}
+    end
+
+    local requestURL = ("%s/guilds/%s/members/%s"):format(DiscordAPI.URL, Config.GuildID, userId)
+    local requestHeaders = {
+        ['Authorization'] = ("Bot %s"):format(Config.BotToken)
+    }
+
+    local userData = {}
+
+    sendHttpRequest(
+        requestURL,
+        function(sCode, response, headers)
+            if sCode == 200 then
+                userData = json.decode(response)
+            end
+        end,
+        'GET',
+        '',
+        requestHeaders
+    )
+
+    return userData
+end
+
+local function getUserAvatar(userId)
+    local userData = getUserData(userId)
+    return userData.avatar -- Devuelve el ID del avatar del usuario
+end
+
 AddEventHandler('onResourceStart', function(rName)
     if rName and rName ~= GetCurrentResourceName() then return end
     if DiscordAPI.ValidToken == nil then
@@ -129,7 +259,11 @@ local exportFunctions = {
     checkIsInGuild = checkIsInGuild,
     removeRole = removeRole,
     giveRole = giveRole,
-    checkBotToken = checkToken
+    checkBotToken = checkToken,
+    checkUserHasRole = checkUserHasRole,
+    getUserRoles = getUserRoles,
+    getUserAvatar = getUserAvatar,
+    getUserData = getUserData
 }
 
 for exportName, exportFunction in pairs(exportFunctions) do
