@@ -1,8 +1,3 @@
-Config = {
-    BotToken = "",
-    GuildID = ""
-}
-
 DiscordAPI = {
     URL = "https://discord.com/api/v10",
     ValidToken = false
@@ -19,17 +14,15 @@ AddEventHandler('__cfx_internal:httpResponse', function(token, status, body, hea
 end)
 
 local function sendHttpRequest(url, cb, method, data, headers)
-    local t = {
+    local requestData = {
         url = url,
         method = method or 'GET',
         data = data or '',
         headers = headers or {}
     }
-    local d = json.encode(t)
-
-    local id = PerformHttpRequestInternal(d, d:len())
-
-    httpDispatch[id] = cb
+    local requestDataString = json.encode(requestData)
+    local requestId = PerformHttpRequestInternal(requestDataString, requestDataString:len())
+    httpDispatch[requestId] = cb
 end
 
 local function checkToken()
@@ -45,8 +38,8 @@ local function checkToken()
 
     sendHttpRequest(
         requestURL,
-        function(sCode, response, headers)
-            if sCode == 200 then
+        function(statusCode, response, headers)
+            if statusCode == 200 then
                 print("^0[^2SUCCESS^0] The bot token is valid")
                 DiscordAPI.ValidToken = true
             else
@@ -65,23 +58,20 @@ local function modifyUserRole(userId, roleId, method)
         return false
     end
 
-    local guildCheck = checkIsInGuild(userId)
-    if not guildCheck then
+    if not checkIsInGuild(userId) then
         return false
     end
 
     local hasRole = checkUserHasRole(userId, roleId)
-    
-    if method == 'PUT' and not hasRole then
-        return addRole(userId, roleId)
-    elseif method == 'DELETE' and hasRole then
-        return removeRole(userId, roleId)
+
+    if (method == 'PUT' and not hasRole) or (method == 'DELETE' and hasRole) then
+        return sendRoleRequest(userId, roleId, method)
     else
         return true
     end
 end
 
-local function addRole(userId, roleId)
+local function sendRoleRequest(userId, roleId, method)
     local requestURL = ("%s/guilds/%s/members/%s/roles/%s"):format(DiscordAPI.URL, Config.GuildID, userId, roleId)
     local requestHeaders = {
         ['Authorization'] = ("Bot %s"):format(Config.BotToken)
@@ -89,27 +79,10 @@ local function addRole(userId, roleId)
 
     sendHttpRequest(
         requestURL,
-        function(sCode, response, headers)
-            return sCode == 204
+        function(statusCode, response, headers)
+            return statusCode == 204
         end,
-        'PUT',
-        '',
-        requestHeaders
-    )
-end
-
-local function removeRole(userId, roleId)
-    local requestURL = ("%s/guilds/%s/members/%s/roles/%s"):format(DiscordAPI.URL, Config.GuildID, userId, roleId)
-    local requestHeaders = {
-        ['Authorization'] = ("Bot %s"):format(Config.BotToken)
-    }
-
-    sendHttpRequest(
-        requestURL,
-        function(sCode, response, headers)
-            return sCode == 204
-        end,
-        'DELETE',
+        method,
         '',
         requestHeaders
     )
@@ -129,8 +102,8 @@ local function checkUserHasRole(userId, roleId)
 
     sendHttpRequest(
         requestURL,
-        function(sCode, response, headers)
-            if sCode == 200 then
+        function(statusCode, response, headers)
+            if statusCode == 200 then
                 local responseData = json.decode(response)
                 if responseData and responseData.roles then
                     hasRole = hasRoleInRoles(roleId, responseData.roles)
@@ -174,46 +147,13 @@ local function checkIsInGuild(userId)
 
     sendHttpRequest(
         requestURL,
-        function(sCode, response, headers)
-            if sCode == 200 then
-                local responseData = json.decode(response)
-                return responseData and responseData['id']
-            end
+        function(statusCode, response, headers)
+            return statusCode == 200
         end,
         'GET',
         '',
         requestHeaders
     )
-end
-
-local function getUserRoles(userId)
-    if not (DiscordAPI.ValidToken and Config.GuildID and userId) then
-        return {}
-    end
-
-    local requestURL = ("%s/guilds/%s/members/%s"):format(DiscordAPI.URL, Config.GuildID, userId)
-    local requestHeaders = {
-        ['Authorization'] = ("Bot %s"):format(Config.BotToken)
-    }
-
-    local userRoles = {}
-
-    sendHttpRequest(
-        requestURL,
-        function(sCode, response, headers)
-            if sCode == 200 then
-                local responseData = json.decode(response)
-                if responseData and responseData.roles then
-                    userRoles = responseData.roles
-                end
-            end
-        end,
-        'GET',
-        '',
-        requestHeaders
-    )
-
-    return userRoles
 end
 
 local function getUserData(userId)
@@ -230,8 +170,8 @@ local function getUserData(userId)
 
     sendHttpRequest(
         requestURL,
-        function(sCode, response, headers)
-            if sCode == 200 then
+        function(statusCode, response, headers)
+            if statusCode == 200 then
                 userData = json.decode(response)
             end
         end,
