@@ -239,3 +239,14 @@ AddEventHandler(
       end
    end
 )
+
+local exportFunctions {
+    ['checkIsInGuild'] = checkIsInGuild,
+    ['removeRole'] = removeRole,
+    ['giveRole'] = giveRole,
+    ['checkBotToken'] = checkToken
+}
+
+for exportName, exportFunction in pairs(exportFunctions) do
+    exports(exportName, exportFunction)
+end
