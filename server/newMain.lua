@@ -245,7 +245,10 @@ end
 
 local function getUserAvatar(userId)
     local userData = getUserData(userId)
-    return userData.avatar -- Devuelve el ID del avatar del usuario
+    return {
+        id = userData.avatar,
+        avatarURL = ("https://cdn.discordapp.com/avatars/%s/%s.png"):format(userId, userData.avatar)
+    }
 end
 
 AddEventHandler('onResourceStart', function(rName)
