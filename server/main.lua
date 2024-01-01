@@ -1,3 +1,32 @@
+local httpDispatch = {}
+
+AddEventHandler('__cfx_internal:httpResponse', function(token, status, body, headers)
+    if httpDispatch[token] then
+        local userCallback = httpDispatch[token]
+        httpDispatch[token] = nil
+        userCallback(status, body, headers)
+    end
+end)
+
+function httpRequest(url, cb, method, data, headers, options)
+    local followLocation = true
+                
+    if options and options.followLocation ~= nil then followLocation = options.followLocation; end
+
+    local t = {
+        url = url,
+        method = method or 'GET',
+        data = data or '',
+        headers = headers or {},
+        followLocation = followLocation
+    }
+    local d = json.encode(t)
+
+    local id = PerformHttpRequestInternal(d, d:len())
+
+    httpDispatch[id] = cb
+end
+
 DiscordAPI = {
    URL = "https://discord.com/api/v10",
    ValidToken = nil
