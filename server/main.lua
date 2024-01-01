@@ -240,7 +240,7 @@ AddEventHandler(
    end
 )
 
-local exportFunctions {
+local exportFunctions = {
     ['checkIsInGuild'] = checkIsInGuild,
     ['removeRole'] = removeRole,
     ['giveRole'] = giveRole,
