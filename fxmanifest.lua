@@ -4,7 +4,7 @@ fx_version 'adamant'
 server_only 'yes'
 
 server_scripts {
-  'server/config.lu*',
+  'server/Config.lu*',
   'server/main.lu*'
 }
 
